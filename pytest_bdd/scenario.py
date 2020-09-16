@@ -16,6 +16,8 @@ import re
 
 import pytest
 
+from .exceptions import SoftAssertionError
+
 try:
     from _pytest import fixtures as pytest_fixtures
 except ImportError:
@@ -131,6 +133,7 @@ def _execute_scenario(feature, scenario, request, encoding):
     request.config.hook.pytest_bdd_before_scenario(request=request, feature=feature, scenario=scenario)
 
     try:
+        soft_assertion_errors = []
         # Execute scenario steps
         for step in scenario.steps:
             try:
@@ -140,7 +143,12 @@ def _execute_scenario(feature, scenario, request, encoding):
                     request=request, feature=feature, scenario=scenario, step=step, exception=exception
                 )
                 raise
-            _execute_step_function(request, scenario, step, step_func)
+            try:
+                _execute_step_function(request, scenario, step, step_func)
+            except SoftAssertionError as error:
+                soft_assertion_errors.append((step, error))
+        if soft_assertion_errors:
+            raise SoftAssertionError("\n" + "\n".join(f"{step.name}\n    {str(error)}" for (step, error) in soft_assertion_errors))
     finally:
         request.config.hook.pytest_bdd_after_scenario(request=request, feature=feature, scenario=scenario)
 

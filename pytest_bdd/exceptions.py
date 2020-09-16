@@ -38,6 +38,10 @@ class NoScenariosFound(Exception):
     """No scenarios found."""
 
 
+class SoftAssertionError(Exception):
+    """Soft assertion error."""
+
+
 @six.python_2_unicode_compatible
 class FeatureError(Exception):
     """Feature parse error."""
